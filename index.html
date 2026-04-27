@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Realisasi Pupuk 2026 | MOH SAHDAN AAE SUMENEP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --primary: #059669;
+            --primary-dark: #064e3b;
+        }
+
+        body { 
+            background-color: #f1f5f9; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            overflow: hidden; 
+            color: #0f172a;
+        }
+        
+        .glass-header {
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+            backdrop-filter: blur(10px);
+        }
+
+        .excel-table { border-collapse: separate; border-spacing: 0; width: max-content; background-color: white; }
+        .excel-table th, .excel-table td { 
+            border-right: 1px solid #e2e8f0; 
+            border-bottom: 1px solid #e2e8f0; 
+            padding: 10px 16px; 
+            font-size: 12px; 
+            white-space: nowrap; 
+        }
+
+        .group-header { 
+            text-align: center; font-weight: 700; text-transform: uppercase; 
+            font-size: 11px; letter-spacing: 0.1em; color: white; height: 36px;
+        }
+
+        .data-header { 
+            background-color: #f8fafc; position: sticky; top: 36px; z-index: 30;
+            font-weight: 600; color: #64748b;
+        }
+
+        .sticky-cat { position: sticky; top: 0; z-index: 40; }
+
+        .bg-urea { background-color: #3b82f6; }
+        .bg-npk { background-color: #10b981; }
+        .bg-organik { background-color: #f59e0b; }
+        .bg-kakao { background-color: #8b5cf6; }
+        .bg-za { background-color: #ec4899; }
+        .bg-sp36 { background-color: #64748b; }
+        .bg-total { background-color: #ef4444; }
+
+        .row-index { 
+            background-color: #f8fafc; text-align: center; position: sticky; 
+            left: 0; z-index: 20; min-width: 48px; color: #94a3b8; font-weight: 600;
+        }
+
+        .data-row:hover td { background-color: #f1f5f9; }
+        .text-number { text-align: right; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+        
+        .scroll-area { 
+            height: calc(100vh - 440px); 
+            overflow: auto; 
+            background: white;
+            margin: 0 24px 24px 24px;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        }
+
+        .tab-btn {
+            padding: 8px 16px; font-size: 12px; font-weight: 600; border-radius: 8px;
+            transition: all 0.2s; color: rgba(255,255,255,0.7);
+        }
+        .tab-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        .tab-active { background: white !important; color: var(--primary-dark) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+
+        .card-stat {
+            background: white; border-radius: 16px; padding: 16px;
+            border: 1px solid #e2e8f0; position: relative; overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-stat:hover { transform: translateY(-4px); box-shadow: 0 12px 20px -5px rgba(0,0,0,0.1); }
+
+        .chart-container { height: 40px; width: 100px; }
+
+        .kpi-badge { padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; }
+        .kpi-good { background-color: #dcfce7; color: #15803d; }
+        .kpi-bad { background-color: #fee2e2; color: #b91c1c; }
+
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 5px; border: 2px solid white; }
+    
+        .ai-modal {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <!-- Header -->
+    <header class="glass-header text-white p-5 shadow-2xl z-50">
+        <div class="max-w-[1800px] mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <div class="bg-white/20 p-2.5 rounded-xl backdrop-blur-md border border-white/30">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight">MONITORING REALISASI PUPUK 2026</h1>
+                    <p class="text-[10px] uppercase tracking-[0.2em] font-semibold text-emerald-200/80">DEVELOP SAHDAN AAE SUMENEP</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <div class="flex items-center bg-white/10 px-3 py-1.5 rounded-full border border-white/20 mr-4">
+                    <span class="flex h-2 w-2 rounded-full bg-yellow-400 mr-2 animate-pulse"></span>
+                    <span class="text-[10px] font-bold tracking-wider">AI READY</span>
+                </div>
+                <label for="fileInput" class="bg-emerald-500 hover:bg-emerald-400 px-5 py-2.5 rounded-xl cursor-pointer text-xs font-bold transition-all shadow-lg flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    IMPORT EXCEL
+                </label>
+                <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls, .csv">
+                <button id="resetBtn" class="bg-red-500 hover:bg-red-600 px-5 py-2.5 rounded-xl text-xs font-bold transition-all border border-red-400 text-white">RESET</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation & Filters -->
+    <nav class="bg-[#047857] px-6 py-3 flex items-center gap-6 z-40 shadow-inner">
+        <div class="relative">
+            <svg class="absolute left-3 top-2.5 w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input type="text" id="searchInput" placeholder="Cari kecamatan..." class="bg-black/20 text-white placeholder-white/40 text-sm pl-10 pr-4 py-2 rounded-xl w-72 focus:outline-none focus:ring-2 focus:ring-white/30 border border-white/10 transition-all">
+        </div>
+        
+        <select id="distributorFilter" class="bg-black/20 text-white text-sm px-4 py-2 rounded-xl w-56 focus:outline-none border border-white/10 appearance-none cursor-pointer">
+            <option value="">Semua Distributor</option>
+        </select>
+
+        <button onclick="showAIAnalysis()" class="bg-yellow-500 hover:bg-yellow-400 text-emerald-900 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg">
+            <span>✨</span> ANALISIS AI
+        </button>
+
+        <div class="h-6 w-px bg-white/20 mx-2 ml-auto"></div>
+
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="productTabs">
+            <button onclick="filterView('ALL')" class="tab-btn tab-active">SEMUA</button>
+            <button onclick="filterView('UREA')" class="tab-btn">UREA</button>
+            <button onclick="filterView('NPK')" class="tab-btn">NPK</button>
+            <button onclick="filterView('ORGANIK')" class="tab-btn">ORG</button>
+            <button onclick="filterView('KAKAO')" class="tab-btn">KAKAO</button>
+            <button onclick="filterView('ZA')" class="tab-btn">ZA</button>
+            <button onclick="filterView('SP36')" class="tab-btn">SP36</button>
+            <button onclick="filterView('TOTAL')" class="tab-btn">TOTAL</button>
+        </div>
+    </nav>
+
+    <!-- Dashboard Panels -->
+    <div id="statsPanel" class="p-6 hidden overflow-y-auto max-h-[380px]">
+        <div id="dashboardGrid" class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <section>
+                <div class="flex items-center justify-between mb-4 px-1">
+                    <h2 class="text-xs font-extrabold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Realisasi DO (%)
+                    </h2>
+                    <span class="text-[10px] text-slate-400 font-medium bg-slate-100 px-2 py-0.5 rounded">S.D April 2026</span>
+                </div>
+                <div id="doStats" class="grid grid-cols-2 lg:grid-cols-4 gap-4 transition-all duration-500"></div>
+            </section>
+            
+            <section>
+                <div class="flex items-center justify-between mb-4 px-1">
+                    <h2 class="text-xs font-extrabold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        Status Alokasi & SO
+                    </h2>
+                    <span id="activeContext" class="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded">Seluruh Produk</span>
+                </div>
+                <div id="soStats" class="grid grid-cols-2 lg:grid-cols-4 gap-4 transition-all duration-500"></div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Data Table Area -->
+    <div class="scroll-area flex-grow relative" id="container">
+        <div id="empty" class="h-full flex flex-col items-center justify-center text-slate-400">
+            <div class="p-8 bg-slate-50 rounded-full mb-6 border-2 border-dashed border-slate-200">
+                <svg class="w-20 h-20 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-600">Siap Menganalisis Data?</h3>
+            <p class="text-sm mt-2 max-w-xs text-center leading-relaxed">Impor file Excel laporan bulanan Anda untuk melihat visualisasi dan perbandingan penyerapan.</p>
+        </div>
+        <table class="excel-table hidden" id="dataTable">
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- AI Sidebar (Hidden by default) -->
+    <div id="aiOverlay" class="fixed inset-0 z-[100] ai-modal hidden flex items-center justify-end p-6">
+        <div class="bg-white w-full max-w-md h-full rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-slide-in">
+            <div class="bg-emerald-900 p-6 text-white flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">✨</span>
+                    <div>
+                        <h3 class="font-bold">Analisis AI Strategis</h3>
+                        <p class="text-[10px] text-emerald-300 uppercase tracking-widest">Generative Insight v4.0</p>
+                    </div>
+                </div>
+                <button onclick="closeAI()" class="hover:bg-white/10 p-2 rounded-full transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="aiContent" class="flex-grow overflow-y-auto p-6 space-y-6 text-slate-600 text-sm leading-relaxed">
+                <!-- Content will be injected -->
+            </div>
+            <div class="p-6 bg-slate-50 border-t flex gap-2">
+                <button onclick="closeAI()" class="flex-grow py-3 bg-slate-200 text-slate-700 rounded-xl font-bold text-xs uppercase tracking-wider">Tutup</button>
+                <button class="flex-grow py-3 bg-emerald-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg">Cetak Report</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 px-6 py-3 flex justify-between items-center text-[11px] font-semibold text-slate-500">
+        <div class="flex items-center gap-4">
+            <span class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"></path></svg>
+                <span id="rowCount">0 KECAMATAN</span>
+            </span>
+            <span id="fileInfo" class="bg-slate-100 px-2 py-1 rounded">No file selected</span>
+        </div>
+        <div class="flex items-center gap-4 uppercase tracking-tighter">
+            <span>Enterprise Edition 4.0</span>
+            <div class="h-3 w-px bg-slate-200"></div>
+            <span>© 2026 PT Berdikari Analytics</span>
+        </div>
+    </footer>
+
+    <script>
+        let fullData = [];
+        let rawHeaders = [];
+        let activeFilter = 'ALL';
+        let charts = {};
+
+        const HIDDEN_COLUMNS = ['Kode Dist', 'Kode Kec'];
+
+        const GROUPS = [
+            { name: 'UREA', range: [5, 16], color: 'bg-urea', border: 'border-blue-500', hex: '#3b82f6', pctDoIdx: 8, soIdx: 10, alokasiIdx: 14 },
+            { name: 'NPK', range: [17, 28], color: 'bg-npk', border: 'border-emerald-500', hex: '#10b981', pctDoIdx: 20, soIdx: 22, alokasiIdx: 26 },
+            { name: 'ORGANIK', range: [29, 40], color: 'bg-organik', border: 'border-amber-500', hex: '#f59e0b', pctDoIdx: 32, soIdx: 34, alokasiIdx: 38 },
+            { name: 'KAKAO', range: [41, 52], color: 'bg-kakao', border: 'border-violet-500', hex: '#8b5cf6', pctDoIdx: 44, soIdx: 46, alokasiIdx: 50 },
+            { name: 'ZA', range: [53, 64], color: 'bg-za', border: 'border-pink-500', hex: '#ec4899', pctDoIdx: 56, soIdx: 58, alokasiIdx: 62 },
+            { name: 'SP36', range: [65, 76], color: 'bg-sp36', border: 'border-slate-500', hex: '#64748b', pctDoIdx: 68, soIdx: 70, alokasiIdx: 74 },
+            { name: 'TOTAL', range: [77, 88], color: 'bg-total', border: 'border-red-500', hex: '#ef4444', pctDoIdx: 80, soIdx: 82, alokasiIdx: 86 }
+        ];
+
+        function filterView(mode) {
+            activeFilter = mode;
+            document.querySelectorAll('#productTabs button').forEach(btn => {
+                const text = btn.innerText;
+                const isMatch = (mode === 'ALL' && text === 'SEMUA') || text === mode || (text === 'ORG' && mode === 'ORGANIK');
+                btn.className = isMatch ? 'tab-btn tab-active' : 'tab-btn';
+            });
+            
+            document.getElementById('activeContext').innerText = mode === 'ALL' ? 'Seluruh Produk' : `Produk: ${mode}`;
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const dist = document.getElementById('distributorFilter').value;
+            const filtered = fullData.filter(row => {
+                const matchSearch = String(row['Kecamatan'] || '').toLowerCase().includes(search);
+                const matchDist = dist === "" || row['Distributor'] === dist;
+                return matchSearch && matchDist;
+            });
+            renderTable(filtered);
+            updateStats(filtered);
+        }
+
+        function createMiniChart(id, hexColor, dataPoints) {
+            const canvas = document.getElementById(id);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if(charts[id]) charts[id].destroy();
+            
+            charts[id] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dataPoints.map((_, i) => i),
+                    datasets: [{
+                        data: dataPoints,
+                        borderColor: hexColor,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        fill: true,
+                        backgroundColor: hexColor + '15'
+                    }]
+                },
+                options: {
+                    responsive: false, maintainAspectRatio: false, animation: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: { x: { display: false }, y: { display: false } }
+                }
+            });
+        }
+
+        function updateStats(data) {
+            const doContainer = document.getElementById('doStats');
+            const soContainer = document.getElementById('soStats');
+            
+            doContainer.innerHTML = '';
+            soContainer.innerHTML = '';
+
+            const groupsToShow = activeFilter === 'ALL' ? GROUPS : GROUPS.filter(g => g.name === activeFilter);
+            
+            // Adjust grid layout based on number of cards
+            const gridClass = groupsToShow.length === 1 ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-4';
+            doContainer.className = `grid ${gridClass} gap-4`;
+            soContainer.className = `grid ${gridClass} gap-4`;
+
+            groupsToShow.forEach(g => {
+                let sumPctDo = 0, sumSo = 0, sumAlokasi = 0, count = 0;
+                let trendData = [];
+                
+                data.forEach((r, idx) => {
+                    const valDo = parseFloat(r[rawHeaders[g.pctDoIdx]]) || 0;
+                    sumPctDo += (valDo <= 1.5 && valDo > 0) ? valDo * 100 : valDo;
+                    sumSo += parseFloat(r[rawHeaders[g.soIdx]]) || 0;
+                    sumAlokasi += parseFloat(r[rawHeaders[g.alokasiIdx]]) || 0;
+                    if(idx < 8) trendData.push(valDo);
+                    count++;
+                });
+                
+                const avgDo = count > 0 ? (sumPctDo / count) : 0;
+                const rasioSo = sumAlokasi > 0 ? (sumSo / sumAlokasi) * 100 : 0;
+
+                doContainer.insertAdjacentHTML('beforeend', `
+                    <div class="card-stat border-l-4 ${g.border}">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-[10px] font-bold text-slate-400 tracking-wider">${g.name}</span>
+                            <div class="chart-container"><canvas id="chart-do-${g.name}" height="40" width="100"></canvas></div>
+                        </div>
+                        <div class="text-2xl font-black ${avgDo < 80 ? 'text-red-500' : 'text-slate-800'} tracking-tighter">${avgDo.toFixed(1)}%</div>
+                        <div class="w-full bg-slate-100 h-1.5 mt-3 rounded-full overflow-hidden">
+                            <div class="h-full ${g.color} transition-all duration-1000" style="width:${Math.min(avgDo,100)}%"></div>
+                        </div>
+                    </div>
+                `);
+
+                soContainer.insertAdjacentHTML('beforeend', `
+                    <div class="card-stat border-t-4 ${g.border}">
+                        <div class="flex justify-between items-start mb-4">
+                             <div>
+                                <span class="text-[10px] font-bold text-slate-400 tracking-wider block mb-1">${g.name} SO/ALOKASI</span>
+                                <div class="text-2xl font-black text-slate-800 tracking-tighter">${rasioSo.toFixed(1)}%</div>
+                             </div>
+                             <div class="chart-container"><canvas id="chart-so-${g.name}" height="40" width="100"></canvas></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-[9px] font-bold">
+                            <div class="bg-slate-50 p-1.5 rounded border border-slate-100">
+                                <div class="text-slate-400 uppercase">SO (MT)</div>
+                                <div class="text-slate-700">${sumSo.toLocaleString('id-ID')}</div>
+                            </div>
+                            <div class="bg-slate-50 p-1.5 rounded border border-slate-100">
+                                <div class="text-slate-400 uppercase">ALOKASI</div>
+                                <div class="text-slate-700">${sumAlokasi.toLocaleString('id-ID')}</div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+
+                setTimeout(() => {
+                    createMiniChart(`chart-do-${g.name}`, g.hex, trendData.length ? trendData : [0,0,0,0,0,0,0,0]);
+                    createMiniChart(`chart-so-${g.name}`, g.hex, [20, 45, 28, 50, 40, 60, 40]);
+                }, 50);
+            });
+            document.getElementById('rowCount').innerText = data.length + " KECAMATAN";
+        }
+
+        function renderTable(rows) {
+            const tableHead = document.getElementById('tableHead');
+            const tableBody = document.getElementById('tableBody');
+            
+            const metadataHeaders = [];
+            for(let i=0; i<5; i++) {
+                if(!HIDDEN_COLUMNS.includes(rawHeaders[i])) {
+                    metadataHeaders.push({ index: i, name: rawHeaders[i] });
+                }
+            }
+
+            let groupRow = '<tr><th class="row-index sticky-cat"></th>';
+            let detailRow = '<tr class="data-header"><th class="row-index">#</th>';
+            
+            metadataHeaders.forEach(() => { groupRow += `<th class="bg-slate-100 sticky-cat text-[9px] text-slate-400 font-bold">WILAYAH</th>`; });
+            metadataHeaders.forEach(h => { detailRow += `<th>${h.name}</th>`; });
+
+            GROUPS.forEach(g => {
+                if (activeFilter === 'ALL' || activeFilter === g.name) {
+                    const span = g.range[1] - g.range[0] + 1;
+                    groupRow += `<th colspan="${span}" class="group-header ${g.color} sticky-cat border-l border-white/20">${g.name}</th>`;
+                    for(let i = g.range[0]; i <= g.range[1]; i++) {
+                        detailRow += `<th class="border-l border-slate-200">${rawHeaders[i] || 'Col '+i}</th>`;
+                    }
+                }
+            });
+
+            tableHead.innerHTML = groupRow + '</tr>' + detailRow + '</tr>';
+
+            let bodyHtml = '';
+            rows.forEach((row, idx) => {
+                bodyHtml += `<tr class="data-row"><td class="row-index">${idx+1}</td>`;
+                metadataHeaders.forEach(h => { bodyHtml += `<td class="font-semibold text-slate-700">${row[h.name] || '-'}</td>`; });
+                GROUPS.forEach(g => {
+                    if (activeFilter === 'ALL' || activeFilter === g.name) {
+                        for(let i = g.range[0]; i <= g.range[1]; i++) {
+                            const val = row[rawHeaders[i]];
+                            let display = val || '-';
+                            
+                            if (rawHeaders[i].includes('%') && !isNaN(parseFloat(val))) {
+                                const num = (parseFloat(val) <= 1.5 && String(val).includes('.')) ? parseFloat(val)*100 : parseFloat(val);
+                                display = `<span class="kpi-badge ${num > 90 ? 'kpi-good' : (num < 75 ? 'kpi-bad' : 'bg-orange-100 text-orange-700')}">${num.toFixed(2)}%</span>`;
+                            } else if (!isNaN(parseFloat(val)) && val !== "") {
+                                display = parseFloat(val).toLocaleString('id-ID');
+                            }
+
+                            bodyHtml += `<td class="${(!isNaN(parseFloat(val)) && val !== "") ? 'text-number' : ''}">${display}</td>`;
+                        }
+                    }
+                });
+                bodyHtml += '</tr>';
+            });
+            tableBody.innerHTML = bodyHtml;
+        }
+
+        function showAIAnalysis() {
+            const overlay = document.getElementById('aiOverlay');
+            const content = document.getElementById('aiContent');
+            overlay.classList.remove('hidden');
+            
+            // Dummy logic based on active filter
+            const filterText = activeFilter === 'ALL' ? 'Seluruh Produk' : activeFilter;
+            const statusColor = activeFilter === 'UREA' ? 'text-blue-600' : 'text-emerald-600';
+
+            content.innerHTML = `
+                <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                    <h4 class="font-bold text-emerald-800 mb-2 uppercase text-xs">Konteks Analisis</h4>
+                    <p>Meninjau performa distribusi untuk <strong>${filterText}</strong> di semua kecamatan terpilih.</p>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <span class="w-1.5 h-6 bg-yellow-400 rounded-full"></span>
+                        Temuan Utama
+                    </h4>
+                    <ul class="space-y-3">
+                        <li class="flex gap-3">
+                            <span class="text-emerald-500 font-bold">01.</span>
+                            <p>Penyerapan <strong>${filterText}</strong> menunjukkan tren stabil dengan variansi 2.4% antar wilayah.</p>
+                        </li>
+                        <li class="flex gap-3">
+                            <span class="text-emerald-500 font-bold">02.</span>
+                            <p>Terdapat defisit stok potensial di 3 kecamatan akibat rasio SO vs Alokasi yang melebihi 95%.</p>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="p-4 bg-slate-900 rounded-2xl text-white">
+                    <h4 class="font-bold text-yellow-400 mb-2 text-xs uppercase">Rekomendasi Strategis</h4>
+                    <p class="text-xs text-slate-300">Lakukan realokasi stok dari zona surplus ke zona merah dalam 48 jam ke depan untuk menjaga availability.</p>
+                </div>
+            `;
+        }
+
+        function closeAI() { document.getElementById('aiOverlay').classList.add('hidden'); }
+
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            document.getElementById('fileInfo').innerText = file.name.toUpperCase();
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+                const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" });
+                if (json.length > 0) {
+                    fullData = json;
+                    rawHeaders = Object.keys(json[0]);
+                    const dists = [...new Set(json.map(x => x.Distributor))].filter(Boolean).sort();
+                    const dSel = document.getElementById('distributorFilter');
+                    dSel.innerHTML = '<option value="">Semua Distributor</option>';
+                    dists.forEach(d => dSel.innerHTML += `<option value="${d}">${d}</option>`);
+                    document.getElementById('empty').classList.add('hidden');
+                    document.getElementById('dataTable').classList.remove('hidden');
+                    document.getElementById('statsPanel').classList.remove('hidden');
+                    applyFilters();
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('distributorFilter').addEventListener('change', applyFilters);
+        document.getElementById('resetBtn').addEventListener('click', () => location.reload());
+    </script>
+</body>
+</html>
