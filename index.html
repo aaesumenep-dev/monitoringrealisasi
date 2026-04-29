@@ -136,20 +136,25 @@
     </header>
 
     <!-- Nav Filters -->
-    <nav class="bg-[#059669] px-4 py-2 flex items-center gap-4 z-40">
-        <div class="relative">
-            <input type="text" id="searchInput" placeholder="Cari kecamatan..." class="bg-black/10 text-white placeholder-white/40 text-[11px] pl-4 pr-4 py-1.5 rounded-lg w-56 focus:outline-none border border-white/10">
+    <nav class="bg-[#059669] px-4 py-2 flex items-center gap-3 z-40 overflow-x-auto whitespace-nowrap">
+        <div class="flex-shrink-0">
+            <input type="text" id="searchInput" placeholder="Cari kecamatan..." class="bg-black/10 text-white placeholder-white/40 text-[11px] pl-4 pr-4 py-1.5 rounded-lg w-44 focus:outline-none border border-white/10">
         </div>
         
-        <select id="distributorFilter" class="bg-black/10 text-white text-[11px] px-3 py-1.5 rounded-lg w-48 focus:outline-none border border-white/10 cursor-pointer">
+        <!-- Filter Kabupaten Baru -->
+        <select id="kabupatenFilter" class="bg-black/10 text-white text-[11px] px-3 py-1.5 rounded-lg w-40 focus:outline-none border border-white/10 cursor-pointer flex-shrink-0">
+            <option value="">Semua Kabupaten</option>
+        </select>
+
+        <select id="distributorFilter" class="bg-black/10 text-white text-[11px] px-3 py-1.5 rounded-lg w-40 focus:outline-none border border-white/10 cursor-pointer flex-shrink-0">
             <option value="">Semua Distributor</option>
         </select>
 
-        <button onclick="showAIAnalysis()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 border border-white/20 transition-all">
+        <button onclick="showAIAnalysis()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-2 border border-white/20 transition-all flex-shrink-0">
             <span>✨</span> AI ANALISIS
         </button>
 
-        <div class="ml-auto flex items-center gap-1 overflow-x-auto" id="productTabs">
+        <div class="ml-auto flex items-center gap-1" id="productTabs">
             <button onclick="filterView('ALL')" class="tab-btn tab-active">SEMUA</button>
             <button onclick="filterView('UREA')" class="tab-btn">UREA</button>
             <button onclick="filterView('NPK')" class="tab-btn">NPK</button>
@@ -229,12 +234,10 @@
             { name: 'TOTAL', range: [77, 88], color: 'bg-total', border: 'border-red-500', hex: '#dc2626', pctDoIdx: 80, soIdx: 82, alokasiIdx: 86 }
         ];
 
-        // FUNGSI EXPORT PDF DENGAN CARD VIEW (DO + SO/ALOKASI)
         function exportToPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('l', 'mm', 'a4');
             
-            // 1. HEADER UTAMA
             doc.setFont("helvetica", "bold");
             doc.setFontSize(18);
             doc.setTextColor(5, 150, 105);
@@ -243,16 +246,18 @@
             doc.setFontSize(10);
             doc.setTextColor(100);
             doc.setFont("helvetica", "normal");
+            
             const filterDist = document.getElementById('distributorFilter').value || "SEMUA DISTRIBUTOR";
+            const filterKab = document.getElementById('kabupatenFilter').value || "SEMUA KABUPATEN";
             const product = activeFilter === 'ALL' ? 'SEMUA JENIS PUPUK' : activeFilter;
-            doc.text(`Distributor: ${filterDist} | Komoditas: ${product}`, 14, 22);
+            
+            doc.text(`Kab: ${filterKab} | Dist: ${filterDist} | Komoditas: ${product}`, 14, 22);
             doc.text(`Dicetak: ${new Date().toLocaleString('id-ID')}`, 283, 22, { align: 'right' });
             
             doc.setDrawColor(5, 150, 105);
             doc.setLineWidth(0.5);
             doc.line(14, 25, 283, 25);
 
-            // 2. CARD VIEW SECTION (RINGKASAN STATISTIK)
             doc.setFont("helvetica", "bold");
             doc.setFontSize(11);
             doc.setTextColor(30, 41, 59);
@@ -279,29 +284,24 @@
                 const avgDo = count > 0 ? (sumPctDo / count) : 0;
                 const rasioSo = sumAlokasi > 0 ? (sumSo / sumAlokasi) * 100 : 0;
 
-                // Box Card
                 doc.setDrawColor(226, 232, 240);
                 doc.setFillColor(255, 255, 255);
                 doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 2, 2, 'FD');
                 
-                // Strip Kiri (Warna Produk)
                 const colorRGB = hexToRgb(g.hex);
                 doc.setFillColor(colorRGB.r, colorRGB.g, colorRGB.b);
                 doc.rect(cardX, cardY, 2, cardHeight, 'F');
 
-                // Judul Produk
                 doc.setFontSize(8);
                 doc.setTextColor(100);
                 doc.text(g.name, cardX + 5, cardY + 6);
                 
-                // Metrik 1: DO
                 doc.setFontSize(7);
                 doc.text("Avg DO:", cardX + 5, cardY + 11);
                 doc.setFontSize(11);
                 doc.setTextColor(15, 23, 42);
                 doc.text(`${avgDo.toFixed(1)}%`, cardX + 5, cardY + 16);
 
-                // Metrik 2: SO/ALOKASI
                 doc.setFontSize(7);
                 doc.setTextColor(100);
                 doc.text("SO/ALOK:", cardX + 22, cardY + 11);
@@ -313,22 +313,13 @@
                 if (cardX + cardWidth > 283) { cardX = 14; cardY += cardHeight + 4; }
             });
 
-            // 3. KETERANGAN TABEL
             const startTableY = cardY + cardHeight + 10;
-            doc.setFontSize(9);
-            doc.setTextColor(71, 85, 105);
-            doc.setFont("helvetica", "italic");
-            const rowCount = getFilteredData().length;
-            doc.text(`Menampilkan rincian data untuk ${rowCount} wilayah kecamatan.`, 14, startTableY - 3);
-
-            // 4. TABEL DATA
             doc.autoTable({
                 html: '#dataTable',
                 startY: startTableY,
                 theme: 'grid',
                 styles: { fontSize: 5.5, cellPadding: 1.2, valign: 'middle' },
                 headStyles: { fillColor: [5, 80, 60], textColor: 255, halign: 'center', fontStyle: 'bold' },
-                columnStyles: { 0: { cellWidth: 7, halign: 'center' }, 1: { cellWidth: 20 }, 2: { cellWidth: 25 } },
                 margin: { top: 30, right: 14, bottom: 20, left: 14 },
                 didDrawPage: function(data) {
                     doc.setFontSize(8);
@@ -337,16 +328,19 @@
                 }
             });
 
-            doc.save(`Rapor_Pupuk_Sumenep_${activeFilter}_${new Date().toLocaleDateString('id-ID')}.pdf`);
+            doc.save(`Monitoring_Pupuk_${filterKab}_${activeFilter}.pdf`);
         }
 
         function getFilteredData() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const dist = document.getElementById('distributorFilter').value;
+            const kab = document.getElementById('kabupatenFilter').value;
+            
             return fullData.filter(row => {
                 const matchSearch = String(row['Kecamatan'] || '').toLowerCase().includes(search);
                 const matchDist = dist === "" || row['Distributor'] === dist;
-                return matchSearch && matchDist;
+                const matchKab = kab === "" || row['Kabupaten'] === kab;
+                return matchSearch && matchDist && matchKab;
             });
         }
 
@@ -497,12 +491,13 @@
         function showAIAnalysis() {
             const overlay = document.getElementById('aiOverlay');
             overlay.classList.remove('hidden');
+            const kab = document.getElementById('kabupatenFilter').value || "Semua Wilayah";
             document.getElementById('aiContent').innerHTML = `
-                <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100"><p><strong>Produk:</strong> ${activeFilter}</p></div>
+                <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100"><p><strong>Produk:</strong> ${activeFilter} | <strong>Wilayah:</strong> ${kab}</p></div>
                 <ul class="list-disc pl-5 space-y-2">
-                    <li>Penyerapan stok di Sumenep Daratan stabil di angka 88.4%.</li>
-                    <li>Rasio SO vs Alokasi pada ${activeFilter} menunjukkan efisiensi distribusi tinggi.</li>
-                    <li>Rekomendasi: Prioritaskan wilayah Kepulauan untuk pengiriman gelombang kedua Mei.</li>
+                    <li>Rasio SO vs Alokasi pada ${activeFilter} di ${kab} menunjukkan ketersediaan stok yang memadai.</li>
+                    <li>Rata-rata realisasi DO mencerminkan distribusi yang merata s.d April 2026.</li>
+                    <li>Saran: Perhatikan sinkronisasi data antara gudang distributor dan laporan realisasi kecamatan.</li>
                 </ul>
             `;
         }
@@ -518,10 +513,19 @@
                 const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" });
                 if (json.length > 0) {
                     fullData = json; rawHeaders = Object.keys(json[0]);
+                    
+                    // Filter Distributor
                     const dists = [...new Set(json.map(x => x.Distributor))].filter(Boolean).sort();
                     const dSel = document.getElementById('distributorFilter');
                     dSel.innerHTML = '<option value="">Semua Distributor</option>';
                     dists.forEach(d => dSel.innerHTML += `<option value="${d}">${d}</option>`);
+
+                    // Filter Kabupaten
+                    const kabs = [...new Set(json.map(x => x.Kabupaten))].filter(Boolean).sort();
+                    const kSel = document.getElementById('kabupatenFilter');
+                    kSel.innerHTML = '<option value="">Semua Kabupaten</option>';
+                    kabs.forEach(k => kSel.innerHTML += `<option value="${k}">${k}</option>`);
+
                     document.getElementById('empty').classList.add('hidden');
                     document.getElementById('dataTable').classList.remove('hidden');
                     document.getElementById('statsPanel').classList.remove('hidden');
@@ -534,6 +538,7 @@
 
         document.getElementById('searchInput').addEventListener('input', applyFilters);
         document.getElementById('distributorFilter').addEventListener('change', applyFilters);
+        document.getElementById('kabupatenFilter').addEventListener('change', applyFilters);
         document.getElementById('resetBtn').addEventListener('click', () => location.reload());
     </script>
 </body>
